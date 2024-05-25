@@ -1,6 +1,6 @@
-'From Cuis7.1 [latest update: #6367] on 25 May 2024 at 5:19:27 am'!
+'From Cuis7.1 [latest update: #6367] on 25 May 2024 at 12:21:24 pm'!
 'Description '!
-!provides: 'LargeLanguageModels' 1 11!
+!provides: 'LargeLanguageModels' 1 12!
 !requires: 'Cuis-Base' 71 6367 nil!
 !requires: 'WebClient' 1 34 nil!
 !requires: 'JSON' 1 26 nil!
@@ -53,11 +53,11 @@ to handle the different use cases.
 Holds the API key for Large Language Models
 Subclass to implement the API.!
 
-!CodeAssistant methodsFor: 'as yet unclassified' stamp: 'rsbohn 5/19/2024 06:57:23'!
+!CodeAssistant methodsFor: 'as yet unclassified' stamp: 'rsbohn 5/25/2024 11:38:03'!
 explain: prompt
 	"Explain <<prompt>> to the user."
 
-	
+	prompt ifNil: [ ^ 'I can''t explain nil.' ].
 	^ self invokeClaude: prompt system: 'Give a brief explanation in an <answer> block.'! !
 
 !CodeAssistant methodsFor: 'as yet unclassified' stamp: 'rsbohn 5/19/2024 06:54:27'!
@@ -85,12 +85,33 @@ review: userCode
 	' Provide suggestions for improvement.'.
 	^ self invokeClaude: userCode system: systemPrompt! !
 
-!LLM methodsFor: 'as yet unclassified' stamp: 'rsbohn 5/22/2024 03:17:36'!
+!CodeAssistant methodsFor: 'as yet unclassified' stamp: 'rsbohn 5/25/2024 12:14:53'!
+reviewMethod: aMethodSelector
+	"Review the user code."
+
+	| systemPrompt |
+	systemPrompt := 'Review the code.',
+	' Wrap your analysis in an <answer> block.',
+	' Note any possible issues in the code.',
+	' Provide suggestions for improvement.'.
+	^ AnthropicClaude new
+		invoke: aMethodSelector decompileString
+		system: systemPrompt! !
+
+!CodeAssistant methodsFor: 'as yet unclassified' stamp: 'rsbohn 5/25/2024 12:09:03'!
+writeUnitTests: aMethodSelector
+	"Adds the ability for a Squeak CodeAssistant to automatically generate unit tests for a given method. 
+	aMethodSelector: represents the name of the method for which to generate tests."
+	^ AnthropicClaude new 
+		invoke: (aMethodSelector decompileString)
+		system: 'Please write Smalltalk unit tests for this method.'! !
+
+!LLM methodsFor: 'as yet unclassified' stamp: 'rsbohn 5/25/2024 12:21:04'!
 readAPIKey: filename
 	"load API key from a file"
 
 	
-	^ 'sunshine'! !
+	^ filename asFileEntry readStreamDo: [:stream | stream content]! !
 
 !LLM class methodsFor: 'as yet unclassified' stamp: 'rsbohn 5/19/2024 07:34:49'!
 ApplicationKey
@@ -142,14 +163,6 @@ post: content
 			request addHeader: 'x-api-key' value: self class ApplicationKey.].
 	
 	^ (Json readFrom: response stream) content! !
-
-!AnthropicClaude methodsFor: 'accessing' stamp: 'rsbohn 5/22/2024 03:23:15'!
-prepare: prompt system: systemPrompt
-	"comment stating purpose of message"
-
-	| payload |
-
-	^ Json render: payload! !
 
 !AnthropicClaude methodsFor: 'accessing' stamp: 'rsbohn 5/21/2024 05:04:16'!
 url
